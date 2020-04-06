@@ -4,8 +4,54 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "85af5a1575ca91d084f7e1360d74f988",
+    "content-hash": "c397a5f4f236d3696d2d708d7002207d",
     "packages": [
+        {
+            "name": "authy/php",
+            "version": "3.0.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/twilio/authy-php.git",
+                "reference": "7bb63790e2cc32a9113bdef236017f8284e0381e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/twilio/authy-php/zipball/7bb63790e2cc32a9113bdef236017f8284e0381e",
+                "reference": "7bb63790e2cc32a9113bdef236017f8284e0381e",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "~6.0",
+                "php": ">=5.6.0"
+            },
+            "require-dev": {
+                "eher/phpunit": ">= 1.6"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "Authy": "lib"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "David Cuadrado",
+                    "email": "david@authy.com"
+                }
+            ],
+            "description": "PHP client for Authy",
+            "homepage": "https://github.com/authy/authy-php",
+            "keywords": [
+                "Authentication",
+                "api",
+                "two-factor"
+            ],
+            "time": "2019-04-09T01:57:04+00:00"
+        },
         {
             "name": "dnoegel/php-xdg-base-dir",
             "version": "v0.1.1",
@@ -563,6 +609,7 @@
                     "email": "jakub.onderka@gmail.com"
                 }
             ],
+            "abandoned": "php-parallel-lint/php-console-color",
             "time": "2018-09-29T17:23:10+00:00"
         },
         {
@@ -609,6 +656,7 @@
                 }
             ],
             "description": "Highlight PHP code in terminal",
+            "abandoned": "php-parallel-lint/php-console-highlighter",
             "time": "2018-09-29T18:48:56+00:00"
         },
         {
