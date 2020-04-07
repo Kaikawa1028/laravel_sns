@@ -20,7 +20,7 @@
                                 <div class="md-form">
                                     <label for="token">送信された7桁の番号を入力してください。</label>
                                     <input class="form-control" type="text" id="token" name="token" required value="{{ old('token') }}">
-                                    <input type="hidden" id="authy_id" name="authy_id" value="{{ $authy_id }}" />
+                                    <input type="hidden" id="authy_id" name="authy_id" value="{{ old('authy_id') ? old('authy_id') : $authy_id }}" />
                                 </div>
 
                                 <button class="btn btn-block blue-gradient mt-2 mb-2" type="submit">送信</button>
@@ -28,7 +28,7 @@
                             </form>
 
                             <div class="mt-0">
-                                <a href="{{ route('register') }}" class="card-text">ユーザー登録はこちら</a>
+                                <a href="{{ route('login') }}" class="card-text">ログイン画面はこちら</a>
                             </div>
 
                         </div>
