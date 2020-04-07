@@ -69,62 +69,38 @@ class RegisterController extends Controller
      * @param AuthyApi $authyApi
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
      */
-    public function register(Request $request, AuthyApi $authyApi)
+    public function register(Request $request, AuthyApi $authy_api)
     {
         $this->validator($request->all())->validate();
 
         DB::beginTransaction();
-        event(new Registered($newUser = $this->create($request->all())));
+        event(new Registered($new_user = $this->create($request->all())));
         
-        $authyUser = $authyApi->registerUser(
-            $newUser->email,
-            $newUser->phone_number,
-            $newUser->country_code
+        $authy_user = $authy_api->registerUser(
+            $new_user->email,
+            $new_user->phone_number,
+            $new_user->country_code
         );
 
-        if ($authyUser->ok()) {
-            $newUser->authy_id = $authyUser->id();
-            $newUser->save();
+        if ($authy_user->ok()) {
+            $new_user->authy_id = $authy_user->id();
+            $new_user->save();
             $request->session()->flash(
                 'status',
                 "User created successfully"
             );
 
-            $authyApi->requestSms($newUser->authy_id);
             DB::commit();
 
-            return redirect()->route('verify.show', ["authy_id" => $newUser->authy_id]);
+            $this->guard()->login($new_user);
+
+            return $this->registered($request, $new_user)
+                ?: redirect($this->redirectPath());
         } else {
-            $errors = $this->getAuthyErrors($authyUser->errors());
+            $errors = $this->getAuthyErrors($authy_user->errors());
             DB::rollback();
 
             return view('auth.register', ['errors' => new MessageBag($errors)]);
-        }
-    }
-
-    /**
-     * This controller function handles the submission form
-     *
-     * @param Request $request Current User Request
-     * @param AuthyApi $authyApi Authy Client
-     * @return mixed Response view
-     */
-    public function verify(Request $request, 
-                           AuthyApi $authyApi)
-    {
-        $token = $request->input('token');
-        $user = User::where("authy_id", $request->input("authy_id"))->first();
-        $verification = $authyApi->verifyToken($user->authy_id, $token);
-
-        if ($verification->ok()) {
-            $user->sms_verified = true;
-            $user->save();
-
-            $this->guard()->login($user);
-            return redirect($this->redirectPath());
-        } else {
-            $errors = $this->getAuthyErrors($verification->errors());
-            return view('', ['errors' => new MessageBag($errors)]);
         }
     }
 
@@ -145,16 +121,6 @@ class RegisterController extends Controller
         ]);
     }
 
-    /**
-     * @param Request $request
-     * @param int $authy_id
-     * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
-     */
-    public function showVerificationForm(Request $request, int $authy_id)
-    {
-        return view('auth.sms')->with('authy_id', $authy_id);
-    }
-
     public function showProviderUserRegistrationForm(Request $request, string $provider)
     {
         $token = $request->token;
@@ -168,27 +134,51 @@ class RegisterController extends Controller
         ]);
     }
 
-    public function registerProviderUser(Request $request, string $provider)
+    public function registerProviderUser(Request $request, string $provider, AuthyApi $authy_api)
     {
         $request->validate([
             'name' => ['required', 'string', 'alpha_num', 'min:3', 'max:16', 'unique:users'],
-            'token' => ['required', 'string'],
+            'country_code' => 'required',
+            'phone_number' => 'required|numeric',
+            'token' => ['required', 'string']
         ]);
 
         $token = $request->token;
 
         $providerUser = Socialite::driver($provider)->userFromToken($token);
 
-        $user = User::create([
+        DB::beginTransaction();
+
+        $new_user = User::create([
             'name' => $request->name,
             'email' => $providerUser->getEmail(),
             'password' => null,
+            'country_code' => $request->country_code,
+            'phone_number' => $request->phone_number
         ]);
 
-        $this->guard()->login($user, true);
+        $authy_user = $authy_api->registerUser(
+            $new_user->email,
+            $new_user->phone_number,
+            $new_user->country_code
+        );
 
-        return $this->registered($request, $user)
-            ?: redirect($this->redirectPath());
+        if ($authy_user->ok()) {
+            $new_user->authy_id = $authy_user->id();
+            $new_user->save();
+
+            DB::commit();
+
+            $this->guard()->login($new_user);
+
+            return $this->registered($request, $new_user)
+                ?: redirect($this->redirectPath());
+        } else {
+            $errors = $this->getAuthyErrors($authy_user->errors());
+            DB::rollback();
+
+            return view('auth.register', ['errors' => new MessageBag($errors)]);
+        }
     }
 
     private function getAuthyErrors($authyErrors)
