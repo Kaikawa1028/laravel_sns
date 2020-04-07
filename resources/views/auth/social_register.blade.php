@@ -26,6 +26,11 @@
                                     <label for="email">メールアドレス</label>
                                     <input class="form-control" type="text" id="email" name="email" value="{{ $email }}" disabled>
                                 </div>
+                                <div class="md-form">
+                                    <label for="phone_number">電話番号</label>
+                                    <input class="form-control" type="text" id="phone_number" name="phone_number" required value="{{ old('phone_number') }}" >
+                                    <input type="hidden" id="country_code" name="country_code" value="81" />
+                                </div>
                                 <button class="btn btn-block blue-gradient mt-2 mb-2" type="submit">ユーザー登録</button>
                             </form>
                         </div>
