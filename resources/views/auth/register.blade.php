@@ -31,6 +31,11 @@
                                     <input class="form-control" type="text" id="email" name="email" required value="{{ old('email') }}" >
                                 </div>
                                 <div class="md-form">
+                                    <label for="phone_number">電話番号</label>
+                                    <input class="form-control" type="text" id="phone_number" name="phone_number" required value="{{ old('phone_number') }}" >
+                                    <input type="hidden" id="country_code" name="country_code" value="81" />
+                                </div>
+                                <div class="md-form">
                                     <label for="password">パスワード</label>
                                     <input class="form-control" type="password" id="password" name="password" required>
                                 </div>

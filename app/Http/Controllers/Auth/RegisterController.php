@@ -6,9 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use App\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\MessageBag;
+use Authy\AuthyApi;
 use Laravel\Socialite\Facades\Socialite;
 
 class RegisterController extends Controller
@@ -55,7 +59,73 @@ class RegisterController extends Controller
             'name' => ['required', 'string', 'alpha_num', 'min:3', 'max:16', 'unique:users'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'country_code' => 'required',
+            'phone_number' => 'required|numeric'
         ]);
+    }
+
+    /**
+     * @param Request $request
+     * @param AuthyApi $authyApi
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
+     */
+    public function register(Request $request, AuthyApi $authyApi)
+    {
+        $this->validator($request->all())->validate();
+
+        DB::beginTransaction();
+        event(new Registered($newUser = $this->create($request->all())));
+        
+        $authyUser = $authyApi->registerUser(
+            $newUser->email,
+            $newUser->phone_number,
+            $newUser->country_code
+        );
+
+        if ($authyUser->ok()) {
+            $newUser->authy_id = $authyUser->id();
+            $newUser->save();
+            $request->session()->flash(
+                'status',
+                "User created successfully"
+            );
+
+            $authyApi->requestSms($newUser->authy_id);
+            DB::commit();
+
+            return redirect()->route('verify.show', ["authy_id" => $newUser->authy_id]);
+        } else {
+            $errors = $this->getAuthyErrors($authyUser->errors());
+            DB::rollback();
+
+            return view('auth.register', ['errors' => new MessageBag($errors)]);
+        }
+    }
+
+    /**
+     * This controller function handles the submission form
+     *
+     * @param Request $request Current User Request
+     * @param AuthyApi $authyApi Authy Client
+     * @return mixed Response view
+     */
+    public function verify(Request $request, 
+                           AuthyApi $authyApi)
+    {
+        $token = $request->input('token');
+        $user = User::where("authy_id", $request->input("authy_id"))->first();
+        $verification = $authyApi->verifyToken($user->authy_id, $token);
+
+        if ($verification->ok()) {
+            $user->sms_verified = true;
+            $user->save();
+
+            $this->guard()->login($user);
+            return redirect($this->redirectPath());
+        } else {
+            $errors = $this->getAuthyErrors($verification->errors());
+            return view('', ['errors' => new MessageBag($errors)]);
+        }
     }
 
     /**
@@ -70,7 +140,19 @@ class RegisterController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'country_code' => $data['country_code'],
+            'phone_number' => $data['phone_number']
         ]);
+    }
+
+    /**
+     * @param Request $request
+     * @param int $authy_id
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
+     */
+    public function showVerificationForm(Request $request, int $authy_id)
+    {
+        return view('auth.sms')->with('authy_id', $authy_id);
     }
 
     public function showProviderUserRegistrationForm(Request $request, string $provider)
@@ -107,5 +189,14 @@ class RegisterController extends Controller
 
         return $this->registered($request, $user)
             ?: redirect($this->redirectPath());
+    }
+
+    private function getAuthyErrors($authyErrors)
+    {
+        $errors = [];
+        foreach ($authyErrors as $field => $message) {
+            array_push($errors, $field . ': ' . $message);
+        }
+        return $errors;
     }
 }

@@ -20,6 +20,10 @@ Route::prefix('register')->name('register.')->group(function () {
     Route::get('/{provider}', 'Auth\RegisterController@showProviderUserRegistrationForm')->name('{provider}');
     Route::post('/{provider}', 'Auth\RegisterController@registerProviderUser');
 });
+
+Route::post('/verify}', 'Auth\RegisterController@verify')->name('verify');
+Route::get('/verify/{authy_id}', 'Auth\RegisterController@showVerificationForm')->name('verify.show');
+
 Route::get('/', 'ArticleController@index')->name('articles.index');
 Route::resource('/articles', 'ArticleController')->except(['index', 'show'])->middleware('auth');
 Route::resource('/articles', 'ArticleController')->only(['show']);
