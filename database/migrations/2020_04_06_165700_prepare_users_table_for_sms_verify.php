@@ -14,6 +14,10 @@ class PrepareUsersTableForSmsVerify extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
+            $table->string('phone_number')->after('email')->nullable()->comment('電話番号');
+            $table->string('country_code')->after('phone_number')->nullable()->comment('国番号');
+            $table->string('authy_id')->after('country_code')->nullable()->comment('Authy ID');
+            $table->boolean('sms_verified')->after('sms_verified')->default(false)->comment('SMS認証済み');
 
         });
     }
@@ -26,10 +30,10 @@ class PrepareUsersTableForSmsVerify extends Migration
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('phone_number')->nullable()->comment('電話番号');
-            $table->string('country_code')->nullable()->comment('国番号');
-            $table->string('authy_id')->nullable()->comment('Authy ID');
-            $table->boolean('sms_verified')->default(false)->comment('SMS認証済み');
+            $table->dropColumn('phone_number');
+            $table->dropColumn('country_code');
+            $table->dropColumn('authy_id');
+            $table->dropColumn('sms_verified');
         });
     }
 }
