@@ -125,7 +125,15 @@ class RegisterController extends Controller
     {
         $token = $request->token;
 
-        $providerUser = Socialite::driver($provider)->userFromToken($token);
+        switch ($provider) {
+            case "google":
+                $providerUser = Socialite::driver($provider)->userFromToken($token);
+                break;
+
+            case "twitter":
+                $providerUser = Socialite::driver($provider)->userFromTokenAndSecret($token, env('TWITTER_ACCESS_TOKEN_SECRET'));
+                break;
+        }
 
         return view('auth.social_register', [
             'provider' => $provider,
@@ -145,7 +153,15 @@ class RegisterController extends Controller
 
         $token = $request->token;
 
-        $providerUser = Socialite::driver($provider)->userFromToken($token);
+        switch ($provider) {
+            case "google":
+                $providerUser = Socialite::driver($provider)->userFromToken($token);
+                break;
+
+            case "twitter":
+                $providerUser = Socialite::driver($provider)->userFromTokenAndSecret($token, env('TWITTER_ACCESS_TOKEN_SECRET'));
+                break;
+        }
 
         DB::beginTransaction();
 
