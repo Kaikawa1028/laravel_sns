@@ -147,13 +147,21 @@ class LoginController extends Controller
 
     public function handleProviderCallback(Request $request, string $provider, AuthyApi $authy_api)
     {
-        $providerUser = Socialite::driver($provider)->stateless()->user();
-
+        switch ($provider) {
+            case "google":
+                $providerUser = Socialite::driver($provider)->stateless()->user();
+                break;
+            
+            case "twitter":
+                $providerUser = Socialite::with($provider)->user();
+                break;
+        }
+        
         $user = User::where('email', $providerUser->getEmail())->first();
 
         if ($user) {
             $sms = $authy_api->requestSms($user->authy_id);
-            
+
             if($sms->ok()) {
                 return redirect()->route('verify.show', ['authy_id' => $user->authy_id]);
             }
