@@ -11,11 +11,15 @@
                     <div class="card-body text-center">
                         <h2 class="h3 card-title text-center mt-2">ログイン</h2>
 
+                        @include('error_card_list')
+
                         <a href="{{ route('login.{provider}', ['provider' => 'google']) }}" class="btn btn-block btn-danger">
                             <i class="fab fa-google mr-1"></i>Googleでログイン
                         </a>
 
-                        @include('error_card_list')
+                        <a href="{{ route('login.{provider}', ['provider' => 'twitter']) }}" class="btn btn-block btn-info mt-3">
+                            <i class="fab fa-twitter mr-1"></i>Twitterでログイン
+                        </a>
 
                         <div class="card-text">
                             <form method="POST" action="{{ route('login') }}">

@@ -6,9 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use App\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\MessageBag;
+use Authy\AuthyApi;
 use Laravel\Socialite\Facades\Socialite;
 
 class RegisterController extends Controller
@@ -55,7 +59,49 @@ class RegisterController extends Controller
             'name' => ['required', 'string', 'alpha_num', 'min:3', 'max:16', 'unique:users'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'country_code' => 'required',
+            'phone_number' => 'required|numeric'
         ]);
+    }
+
+    /**
+     * @param Request $request
+     * @param AuthyApi $authyApi
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
+     */
+    public function register(Request $request, AuthyApi $authy_api)
+    {
+        $this->validator($request->all())->validate();
+
+        DB::beginTransaction();
+        event(new Registered($new_user = $this->create($request->all())));
+        
+        $authy_user = $authy_api->registerUser(
+            $new_user->email,
+            $new_user->phone_number,
+            $new_user->country_code
+        );
+
+        if ($authy_user->ok()) {
+            $new_user->authy_id = $authy_user->id();
+            $new_user->save();
+            $request->session()->flash(
+                'status',
+                "User created successfully"
+            );
+
+            DB::commit();
+
+            $this->guard()->login($new_user);
+
+            return $this->registered($request, $new_user)
+                ?: redirect($this->redirectPath());
+        } else {
+            $errors = $this->getAuthyErrors($authy_user->errors());
+            DB::rollback();
+
+            return view('auth.register', ['errors' => new MessageBag($errors)]);
+        }
     }
 
     /**
@@ -70,6 +116,8 @@ class RegisterController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'country_code' => $data['country_code'],
+            'phone_number' => $data['phone_number']
         ]);
     }
 
@@ -77,7 +125,15 @@ class RegisterController extends Controller
     {
         $token = $request->token;
 
-        $providerUser = Socialite::driver($provider)->userFromToken($token);
+        switch ($provider) {
+            case "google":
+                $providerUser = Socialite::driver($provider)->userFromToken($token);
+                break;
+
+            case "twitter":
+                $providerUser = Socialite::driver($provider)->userFromTokenAndSecret($token, env('TWITTER_ACCESS_TOKEN_SECRET'));
+                break;
+        }
 
         return view('auth.social_register', [
             'provider' => $provider,
@@ -86,26 +142,67 @@ class RegisterController extends Controller
         ]);
     }
 
-    public function registerProviderUser(Request $request, string $provider)
+    public function registerProviderUser(Request $request, string $provider, AuthyApi $authy_api)
     {
         $request->validate([
             'name' => ['required', 'string', 'alpha_num', 'min:3', 'max:16', 'unique:users'],
-            'token' => ['required', 'string'],
+            'country_code' => 'required',
+            'phone_number' => 'required|numeric',
+            'token' => ['required', 'string']
         ]);
 
         $token = $request->token;
 
-        $providerUser = Socialite::driver($provider)->userFromToken($token);
+        switch ($provider) {
+            case "google":
+                $providerUser = Socialite::driver($provider)->userFromToken($token);
+                break;
 
-        $user = User::create([
+            case "twitter":
+                $providerUser = Socialite::driver($provider)->userFromTokenAndSecret($token, env('TWITTER_ACCESS_TOKEN_SECRET'));
+                break;
+        }
+
+        DB::beginTransaction();
+
+        $new_user = User::create([
             'name' => $request->name,
             'email' => $providerUser->getEmail(),
             'password' => null,
+            'country_code' => $request->country_code,
+            'phone_number' => $request->phone_number
         ]);
 
-        $this->guard()->login($user, true);
+        $authy_user = $authy_api->registerUser(
+            $new_user->email,
+            $new_user->phone_number,
+            $new_user->country_code
+        );
 
-        return $this->registered($request, $user)
-            ?: redirect($this->redirectPath());
+        if ($authy_user->ok()) {
+            $new_user->authy_id = $authy_user->id();
+            $new_user->save();
+
+            DB::commit();
+
+            $this->guard()->login($new_user);
+
+            return $this->registered($request, $new_user)
+                ?: redirect($this->redirectPath());
+        } else {
+            $errors = $this->getAuthyErrors($authy_user->errors());
+            DB::rollback();
+
+            return view('auth.register', ['errors' => new MessageBag($errors)]);
+        }
+    }
+
+    private function getAuthyErrors($authyErrors)
+    {
+        $errors = [];
+        foreach ($authyErrors as $field => $message) {
+            array_push($errors, $field . ': ' . $message);
+        }
+        return $errors;
     }
 }

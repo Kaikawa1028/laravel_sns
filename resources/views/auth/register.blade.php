@@ -11,11 +11,15 @@
                     <div class="card-body text-center">
                         <h2 class="h3 card-title text-center mt-2">ユーザー登録</h2>
 
+                        @include('error_card_list')
+
                         <a href="{{ route('login.{provider}', ['provider' => 'google']) }}" class="btn btn-block btn-danger">
                             <i class="fab fa-google mr-1"></i>Googleで登録
                         </a>
 
-                        @include('error_card_list')
+                        <a href="{{ route('login.{provider}', ['provider' => 'twitter']) }}" class="btn btn-block btn-info mt-3">
+                            <i class="fab fa-twitter mr-1"></i>Twitterで登録
+                        </a>
 
                         <div class="card-text">
                             {{--ここから--}}
@@ -29,6 +33,11 @@
                                 <div class="md-form">
                                     <label for="email">メールアドレス</label>
                                     <input class="form-control" type="text" id="email" name="email" required value="{{ old('email') }}" >
+                                </div>
+                                <div class="md-form">
+                                    <label for="phone_number">電話番号</label>
+                                    <input class="form-control" type="text" id="phone_number" name="phone_number" required value="{{ old('phone_number') }}" >
+                                    <input type="hidden" id="country_code" name="country_code" value="81" />
                                 </div>
                                 <div class="md-form">
                                     <label for="password">パスワード</label>
