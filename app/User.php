@@ -56,6 +56,11 @@ class User extends Authenticatable
         return $this->belongsToMany('App\Article', 'likes')->withTimestamps();
     }
 
+    public function comments(): BelongsToMany
+    {
+        return $this->belongsToMany('App\Article', 'comments')->withTimestamps();
+    }
+
     public function followers(): BelongsToMany
     {
         return $this->belongsToMany('App\User', 'follows', 'followee_id', 'follower_id')->withTimestamps();

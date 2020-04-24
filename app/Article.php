@@ -23,6 +23,11 @@ class Article extends Model
         return $this->belongsToMany('App\User', 'likes')->withTimestamps();
     }
 
+    public function comments(): BelongsToMany
+    {
+        return $this->belongsToMany('App\User', 'comments')->withTimestamps();
+    }
+
     /**
      * @param User|null $user
      * @return bool
