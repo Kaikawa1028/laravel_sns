@@ -13,3 +13,13 @@ use Illuminate\Http\Request;
 |
 */
 
+Route::group(['middleware' => ['auth:api']], function () {
+    Route::prefix('articles')->name('articles.')->group(function () {
+        Route::post('/{article}/comments', 'CommentController@store')->name('comment.store');
+    });
+});
+
+Route::prefix('articles')->name('articles.')->group(function () {
+    Route::get('/{article}/comments', 'CommentController@index')->name('comment');
+});
+
