@@ -11,6 +11,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Http\Request;
 use Illuminate\Support\MessageBag;
 use Authy\AuthyApi;
+use Illuminate\Support\Str;
 
 class LoginController extends Controller
 {
@@ -80,6 +81,19 @@ class LoginController extends Controller
         return $this->sendFailedLoginResponse($request);
     }
 
+    private function setApiToken(User $user)
+    {
+        $token = Str::random(80);
+
+        $user->forceFill([
+            'api_token' => hash('sha256', $token),
+        ])->save();
+
+        $user->update(['api_token' => str_random(60)]);
+
+        session()->put('api_token', $token);
+    }
+
     public function showVerificationForm(int $authy_id)
     {
         return view('auth.sms')->with('authy_id', $authy_id);
@@ -104,6 +118,7 @@ class LoginController extends Controller
             $user->save();
 
             $this->guard()->login($user);
+            $this->setApiToken($user);
             return redirect($this->redirectPath());
         } else {
             $errors = $this->getAuthyErrors($verification->errors());
