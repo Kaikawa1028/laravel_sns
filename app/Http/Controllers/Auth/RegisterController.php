@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\MessageBag;
 use Authy\AuthyApi;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Str;
 
 class RegisterController extends Controller
 {
@@ -93,6 +94,7 @@ class RegisterController extends Controller
             DB::commit();
 
             $this->guard()->login($new_user);
+            $this->setApiToken($new_user);
 
             return $this->registered($request, $new_user)
                 ?: redirect($this->redirectPath());
@@ -102,6 +104,19 @@ class RegisterController extends Controller
 
             return view('auth.register', ['errors' => new MessageBag($errors)]);
         }
+    }
+
+    private function setApiToken(User $user)
+    {
+        $token = Str::random(80);
+
+        $user->forceFill([
+            'api_token' => hash('sha256', $token),
+        ])->save();
+
+        $user->update(['api_token' => str_random(60)]);
+
+        session()->put('api_token', $token);
     }
 
     /**
