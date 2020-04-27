@@ -17,6 +17,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::prefix('articles')->name('articles.')->group(function () {
         Route::post('/{article}/comments', 'CommentController@store')->name('comment.store');
     });
+    Route::post('users/{name}/message', 'MessageController@store')->name('user.message.post');
 });
 
 Route::prefix('articles')->name('articles.')->group(function () {
