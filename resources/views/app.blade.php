@@ -15,6 +15,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
     <!-- Material Design Bootstrap -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.11/css/mdb.min.css" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/078f8b1d7f.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
