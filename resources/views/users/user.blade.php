@@ -5,13 +5,17 @@
                 <i class="fas fa-user-circle fa-3x"></i>
             </a>
             @if( Auth::id() !== $user->id )
-                <follow-button
-                        class="ml-auto"
-                        :initial-is-followed-by='@json($user->isFollowedBy(Auth::user()))'
-                        :authorized='@json(Auth::check())'
-                        endpoint="{{ route('users.follow', ['name' => $user->name]) }}"
-                >
-                </follow-button>
+                <div class="ml-auto d-flex flex-row">
+                    <div class="mr-3">
+                        <a href="{{ route('users.message', ['name' => $user->name]) }}"><i class="fas fa-envelope fa-2x"></i></a>
+                    </div>
+                    <follow-button
+                            :initial-is-followed-by='@json($user->isFollowedBy(Auth::user()))'
+                            :authorized='@json(Auth::check())'
+                            endpoint="{{ route('users.follow', ['name' => $user->name]) }}"
+                    >
+                    </follow-button>
+                </div>
             @endif
         </div>
         <h2 class="h5 card-title m-0">
